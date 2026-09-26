@@ -285,6 +285,37 @@ already declares its own, and pinning at the command layer would override the ag
 
 ---
 
+## How it learns
+
+The kit gets better at *your* project as you use it, without you maintaining anything.
+
+**It records its own mistakes.** Every write the guard blocks is appended to
+`.claude/frontend-kit/.signals.jsonl` with the rule broken and the file. A blocked write
+is a mistake caught in the act — the strongest signal available.
+
+**It notices when you correct it.** A prompt like "no, we always use tokens from
+`theme.css`" is detected as a correction and logged with what you said.
+
+**It writes the learning itself.** At the end of a turn, a `Stop` hook consolidates the
+ledger into `learnings.md` — grouping repeated violations into one rule with its reason,
+and capturing your corrections verbatim. Then it archives and clears the ledger so
+nothing is learned twice.
+
+That last part is deliberate and was arrived at the hard way. Earlier versions asked
+Claude to write its own learnings, then escalated to forcing it. Live testing showed the
+model recognising the forced directive as *"the same automated hook repeating"* and
+declining to act — reasonably. **Asking the model to record its lessons does not work.**
+So the hook does it: the ledger already holds the rule, the files, the counts and your
+words. Capture is guaranteed; Claude's role is reduced to *refining* an entry that
+already exists.
+
+Noise control: a single blocked write is treated as a slip and recorded as nothing. Two
+or more of the same rule is a pattern — that becomes a written convention. Corrections
+are always captured, since you said them on purpose.
+
+`.signals.jsonl` is per-developer working state — gitignore it. `learnings.md` and
+`conventions.md` are the shared output, and belong in version control.
+
 ## Project memory
 
 Onboarding creates this in **your** repo:
