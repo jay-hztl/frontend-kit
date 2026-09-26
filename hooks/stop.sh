@@ -28,6 +28,13 @@ CORRECTIONS=$(grep -c '"kind":"correction"' "$LEDGER" 2>/dev/null || echo 0)
 SESSION_ID="$(sed -n 's/.*"session_id"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' <<<"$(cat 2>/dev/null || true)" | head -1)"
 FORCED_MARKER="${TMPDIR:-/tmp}/frontend-kit-consolidated-${SESSION_ID:-nosession}"
 
+# Encode a multi-line string as a JSON string body (escape \, ", then fold newlines).
+json_escape() {
+  printf '%s' "$1" \
+    | sed 's/\\/\\\\/g; s/"/\\"/g' \
+    | awk 'BEGIN{ORS=""} {print (NR>1 ? "\\n" : "") $0}'
+}
+
 DIRECTIVE="<frontend-kit-learning>
 This session accumulated ${TOTAL} unconsolidated learning signal(s): ${DENIES} blocked write(s) and ${CORRECTIONS} developer correction(s), recorded in \`.claude/frontend-kit/.signals.jsonl\`.
 
@@ -42,13 +49,6 @@ Before finishing, invoke the \`kit-self-improve\` skill and do this:
 5. Tell the developer in one line what you recorded and where.
 </frontend-kit-learning>"
 
-# Encode a multi-line string as a JSON string body (escape \, ", then fold newlines).
-json_escape() {
-  printf '%s' "$1" \
-    | sed 's/\\/\\\\/g; s/"/\\"/g' \
-    | awk 'BEGIN{ORS=""} {print (NR>1 ? "\\n" : "") $0}'
-}
-
 # Below the threshold, or already forced once this session: nudge only.
 if [ "$TOTAL" -lt 3 ] || [ -f "$FORCED_MARKER" ]; then
   printf '{"hookSpecificOutput":{"hookEventName":"Stop","additionalContext":"%s"}}\n' \
@@ -57,7 +57,18 @@ if [ "$TOTAL" -lt 3 ] || [ -f "$FORCED_MARKER" ]; then
 fi
 
 # Threshold reached and not yet forced: block the stop so consolidation happens.
+# The directive goes to BOTH channels — additionalContext on stdout is the
+# documented path for Stop, stderr carries the blocking reason.
 touch "$FORCED_MARKER" 2>/dev/null || true
-printf '%s\n' "$DIRECTIVE" >&2
-echo "Do this now, then finish. This will not be asked again in this session." >&2
+
+IMPERATIVE="$DIRECTIVE
+YOUR NEXT ACTION IS NOT OPTIONAL AND NOT A QUESTION: write the consolidated learnings to
+\`.claude/frontend-kit/conventions.md\` and/or \`.claude/frontend-kit/learnings.md\` now,
+using the Write or Edit tool, then truncate \`.claude/frontend-kit/.signals.jsonl\`.
+Do not reply that there is nothing to do — ${TOTAL} signals are on disk. Do not ask
+permission. Do this, state in one line what you recorded, then finish."
+
+printf '{"hookSpecificOutput":{"hookEventName":"Stop","additionalContext":"%s"}}\n' \
+  "$(json_escape "$IMPERATIVE")"
+printf '%s\n' "$IMPERATIVE" >&2
 exit 2

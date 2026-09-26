@@ -44,16 +44,26 @@ that'?s not how|use .* instead|actually,? (we|it|the)"; then
 The developer appears to be CORRECTING you. Treat this as durable project knowledge,
 not a one-off instruction.
 
-After you have resolved the correction itself:
-1. Decide whether it is durable — a project convention, constraint or preference that
-   will apply again — or a one-off that only matters right now. Only durable ones get saved.
-2. If durable, invoke the `kit-self-improve` skill and append it to
-   `.claude/frontend-kit/learnings.md` in the standard format (what happened, the rule
-   going forward, and WHY — so a future session knows when it stops applying).
-3. Check for an existing entry that already covers it and amend rather than duplicate.
-4. Tell the developer in one line what you recorded and where.
+REQUIRED, in this turn — not "later", not "if asked":
+1. Resolve the correction itself.
+2. Decide whether it is durable — a project convention, constraint or preference that will
+   apply again — or a one-off that only matters right now. Only durable ones get saved.
+3. If durable, you MUST append it to `.claude/frontend-kit/learnings.md` (or
+   `conventions.md` if it is a "how this project does things" rule) using the Write or
+   Edit tool, in this format:
 
-Do not record it silently, and do not record something the codebase already makes obvious.
+       ### <YYYY-MM-DD> — <short title>
+       **What happened:** <the correction>
+       **Rule going forward:** <the imperative version>
+       **Why:** <the reason, so a future session knows when it stops applying>
+
+   The **Why** line is not optional. A rule without its reason cannot be safely retired.
+4. Check for an existing entry that already covers it and amend rather than duplicate.
+5. Tell the developer in one line what you recorded and where.
+
+Writing the file is the point. Acknowledging the correction in prose and moving on means
+the same correction gets made again next week — which is the exact failure this prevents.
+Do not record something the codebase already makes obvious, and never record silently.
 </frontend-kit-learning>
 EOF
 fi

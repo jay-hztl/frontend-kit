@@ -1,6 +1,6 @@
 {
   "name": "frontend-kit",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "description": "A project-aware frontend engineering kit. Detects whether you are doing Figma-to-Code or Lift-and-Shift, enforces the right setup, then routes every request through deep requirement analysis into pixel-perfect, typed, accessible, SEO-ready, browser-verified components.",
   "author": {
     "name": "Frontend Kit"
