@@ -333,6 +333,18 @@ a defect, not a style preference.
 **Tokens, not literals.** A hard-coded hex that renders identically to the token is
 still a defect — it breaks theming, dark mode and the next rebrand.
 
+**Two rules are enforced by a hook, not just advised.** A `PreToolUse` guard inspects
+every UI file *before* it is written and blocks the write if it reimplements a component
+the project already has, or if it carries layout but has no breakpoint handling. Skills
+are guidance the model can under-weight; this one is not negotiable.
+
+Both have a documented escape hatch, because both have real exceptions — put
+`// fk:reuse-exempt <reason>` or `// fk:responsive-exempt <reason>` in the file and the
+write proceeds. An enforced rule with no override is a rule people disable.
+
+The guard fails **open**: if Node is missing or it errors, the write goes through. You
+should never be blocked because a checker could not start.
+
 **Verify by looking.** No UI change is reported as done on the strength of the code
 alone. If the dev server would not start, the kit says so rather than reasoning about
 what the code probably does.
@@ -372,6 +384,8 @@ frontend-kit/
 │   ├── hooks.json
 │   ├── session-start.sh          # loads memory / forces onboarding
 │   ├── user-prompt-submit.sh     # setup gate
+│   ├── pre-write-guard.sh        # blocks writes that break reuse/responsive
+│   ├── guard.mjs                 # the guard's logic
 │   └── post-edit-reminder.sh     # definition-of-done reminder
 ├── agents/                       # 4 agents
 ├── skills/                       # 16 skills
@@ -379,8 +393,8 @@ frontend-kit/
 └── templates/                    # memory file templates
 ```
 
-The hooks are plain Bash with no dependencies beyond `grep` and `sed` — nothing to
-install, nothing to break.
+Three hooks are plain Bash needing only `grep` and `sed`. The write guard uses Node,
+which every frontend project already has, and fails open if it is absent.
 
 ---
 
