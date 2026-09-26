@@ -33,17 +33,17 @@ Frontend Kit is built around fixing exactly those three things.
 ## Installation
 
 ```bash
-/plugin marketplace add jaythakkar/frontend-kit
+claude plugin marketplace add jay-hztl/frontend-kit
 ```
 
 ```bash
-/plugin install frontend-kit
+claude plugin install frontend-kit@frontend-kit-marketplace
 ```
 
 Or from a local clone:
 
 ```bash
-/plugin marketplace add /path/to/Frontend-kit
+claude plugin marketplace add /path/to/Frontend-kit
 ```
 
 Restart the session after installing so the hooks register.
