@@ -10,8 +10,32 @@ effort: medium
 A correction you do not record is a correction you will need again next week. This skill
 turns session experience into persistent project knowledge.
 
+## Step 0 — Read the signal ledger first
+
+The kit records its own mistakes. **Always start here**, before relying on recall:
+
+```bash
+cat .claude/frontend-kit/.signals.jsonl 2>/dev/null
+```
+
+Two kinds of entry land in it automatically:
+
+- `"kind":"guard-deny"` — a write the PreToolUse guard blocked, with the `rule` broken
+  and the `file`. This is a mistake caught in the act: the strongest evidence you have.
+- `"kind":"correction"` — a prompt where the developer was correcting you, with an excerpt.
+
+**Read it for patterns, not events.** Three `REUSE` denials is *one* missing convention
+("always compose from `src/components/primitives`"), not three separate notes. One
+isolated denial is probably just a slip and may be worth nothing.
+
+The guard escalates on its own: once a rule has been broken three times it tells you
+directly to record a convention. When you see that, the project has an unwritten rule —
+find it, name it, and write it down.
+
 ## When to run it
 
+- **Signals are sitting in the ledger** (the Stop hook will tell you, and will insist
+  once three or more accumulate)
 - The developer corrects you about how this project does something
 - You discover a convention by reading code that was not written down anywhere
 - You had to ask a question that a future session will also have to ask
@@ -131,6 +155,22 @@ Before adding, check whether an entry already covers it — amend rather than du
 Delete entries that have become wrong; a stale rule is worse than no rule. If
 `learnings.md` grows past roughly fifty entries, consolidate the durable ones into
 `conventions.md` and prune.
+
+## Close the loop — truncate the ledger
+
+Once consolidated, empty it, or the same signals get re-learned every session and the
+Stop hook keeps insisting:
+
+```bash
+: > .claude/frontend-kit/.signals.jsonl
+```
+
+Do this **only after** the learnings are actually written to disk. Truncating first and
+failing to write loses the evidence permanently.
+
+Keep `.signals.jsonl` out of version control — it is per-developer working state, not
+shared knowledge. The *consolidated* files (`conventions.md`, `learnings.md`) are what
+the team commits. Add it to `.gitignore` if it is not already there.
 
 ## Always tell the developer
 

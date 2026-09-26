@@ -22,6 +22,42 @@ PROFILE="$KIT_DIR/project-profile.json"
 # Read the raw prompt so we can let setup/meta requests through untouched.
 PROMPT="$(cat 2>/dev/null || true)"
 
+# --- correction detection ----------------------------------------------------
+# A developer correcting Claude is the second-richest learning signal after a
+# blocked write. Left uncaptured, the same correction gets made again next week.
+KIT_DIR="$ROOT/.claude/frontend-kit"
+LOWER="$(printf '%s' "$PROMPT" | tr '[:upper:]' '[:lower:]')"
+
+if printf '%s' "$LOWER" | grep -qE \
+  "^(no|nope|wrong|incorrect)[,. ]|that'?s (not|wrong|incorrect)|don'?t (do|use|add|put)|\
+should(n'?t| not) (be|use|have|do)|we (always|never|don'?t) |not like that|\
+i (said|told you|already said)|stop (doing|using)|why did you|you (were|are) wrong|\
+that'?s not how|use .* instead|actually,? (we|it|the)"; then
+
+  mkdir -p "$KIT_DIR" 2>/dev/null || true
+  EXCERPT="$(printf '%s' "$PROMPT" | head -c 300 | tr '\n' ' ' | sed 's/"/'"'"'/g')"
+  printf '{"ts":"%s","kind":"correction","excerpt":"%s"}\n' \
+    "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "$EXCERPT" >> "$KIT_DIR/.signals.jsonl" 2>/dev/null || true
+
+  cat <<'EOF'
+<frontend-kit-learning>
+The developer appears to be CORRECTING you. Treat this as durable project knowledge,
+not a one-off instruction.
+
+After you have resolved the correction itself:
+1. Decide whether it is durable — a project convention, constraint or preference that
+   will apply again — or a one-off that only matters right now. Only durable ones get saved.
+2. If durable, invoke the `kit-self-improve` skill and append it to
+   `.claude/frontend-kit/learnings.md` in the standard format (what happened, the rule
+   going forward, and WHY — so a future session knows when it stops applying).
+3. Check for an existing entry that already covers it and amend rather than duplicate.
+4. Tell the developer in one line what you recorded and where.
+
+Do not record it silently, and do not record something the codebase already makes obvious.
+</frontend-kit-learning>
+EOF
+fi
+
 # Escape hatch: an explicit override phrase from the developer.
 if printf '%s' "$PROMPT" | grep -qi 'frontend-kit[: ]*\(skip\|bypass\|override\)'; then
   echo "<frontend-kit>Setup gate overridden by the developer for this prompt. Proceed, but state once that pixel accuracy cannot be guaranteed without the design source.</frontend-kit>"

@@ -15,10 +15,30 @@
  * Fails OPEN on every error: a crashed guard must never block the developer.
  */
 
-import { readFileSync, existsSync, readdirSync, statSync } from 'node:fs'
+import { readFileSync, existsSync, readdirSync, statSync, appendFileSync } from 'node:fs'
 import { join, basename, extname, relative } from 'node:path'
 
 const allow = () => process.exit(0)
+
+/**
+ * Append a signal to the learning ledger. A blocked write is a mistake caught
+ * in the act — the highest-value learning signal the kit gets. Discarding it
+ * means the same mistake recurs next session.
+ */
+function logSignal(kitDir, entry) {
+  try {
+    appendFileSync(join(kitDir, '.signals.jsonl'),
+      JSON.stringify({ ts: new Date().toISOString(), ...entry }) + '\n')
+  } catch { /* never let logging break the guard */ }
+}
+
+/** How many times this rule has already been broken in this project. */
+function priorCount(kitDir, rule) {
+  try {
+    return readFileSync(join(kitDir, '.signals.jsonl'), 'utf8')
+      .split('\n').filter(l => l.includes(`"rule":"${rule}"`)).length
+  } catch { return 0 }
+}
 
 function deny(reason) {
   process.stdout.write(JSON.stringify({
@@ -156,11 +176,31 @@ if (existsSync(bpFile) && !/fk:responsive-exempt/.test(content)) {
 // ---------------------------------------------------------------------------
 if (!violations.length) allow()
 
+// --- record the mistake, and escalate if it is a repeat -------------------
+const rel = relative(root, filePath) || filePath
+let escalation = ''
+
+for (const v of violations) {
+  const rule = v.includes('• REUSE') ? 'REUSE' : 'RESPONSIVE'
+  const prior = priorCount(KIT, rule)
+  logSignal(KIT, { kind: 'guard-deny', rule, file: rel, session: payload?.session_id ?? null })
+
+  // 3rd+ time means this is not a one-off slip — it is a project fact nobody wrote down
+  if (prior + 1 >= 3) {
+    escalation +=
+      `\n\n⚠ PATTERN: the ${rule} rule has now been broken ${prior + 1} times in this project. ` +
+      `That is a convention that is not written down anywhere the kit can see. After fixing ` +
+      `this write, invoke the \`kit-self-improve\` skill and record it in ` +
+      `\`.claude/frontend-kit/conventions.md\` so future sessions stop repeating it.`
+  }
+}
+
 deny(
   `Frontend Kit blocked this write — ${violations.length} rule violation(s) in ` +
-  `\`${relative(root, filePath) || filePath}\`:\n\n${violations.join('\n\n')}\n\n` +
+  `\`${rel}\`:\n\n${violations.join('\n\n')}\n\n` +
   `Fix these and write the file again.\n\n` +
   `Genuine exceptions exist. If a rule truly does not apply here, add a comment to the ` +
   `file stating why — \`// fk:reuse-exempt <reason>\` or \`// fk:responsive-exempt <reason>\` ` +
-  `— and the write will proceed. Use these when they are correct, not to get past the check.`
+  `— and the write will proceed. Use these when they are correct, not to get past the check.` +
+  escalation
 )
