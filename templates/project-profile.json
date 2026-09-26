@@ -1,0 +1,60 @@
+{
+  "_comment": "Frontend Kit project profile. The hooks read projectType, figmaConnected and referenceUrl literally — keep those field names and value spellings exactly as they are. Commit this file so your team shares the same setup.",
+
+  "projectType": "figma-to-code | lift-and-shift | greenfield | mixed",
+  "projectName": "",
+  "onboardedOn": "YYYY-MM-DD",
+
+  "designSource": {
+    "figmaFileUrl": "",
+    "figmaUsesVariables": false,
+    "figmaCodeConnect": false,
+    "breakpointFramesAvailable": [],
+    "notes": ""
+  },
+
+  "figmaConnected": false,
+
+  "referenceUrl": "",
+  "reference": {
+    "fidelityMode": "faithful-port | port-plus-cleanup | port-plus-redesign",
+    "inScopeRoutes": [],
+    "outOfScopeRoutes": [],
+    "authNotes": ""
+  },
+
+  "stack": {
+    "framework": "",
+    "router": "app | pages | n-a",
+    "language": "typescript | javascript",
+    "styling": "",
+    "componentLibrary": "",
+    "stateManagement": "",
+    "cms": ""
+  },
+
+  "applicationType": "marketing | web-app | ecommerce | design-system | spa | monorepo",
+
+  "qualityGates": {
+    "typescript": "required | optional | n-a",
+    "storybook": "always | ask | never | not-installed",
+    "unitTests": "always | ask | never | not-installed",
+    "browserVerification": "always | ask | never",
+    "accessibilityTarget": "wcag-2.2-aa",
+    "seo": "critical | standard | n-a"
+  },
+
+  "commands": {
+    "dev": "npm run dev",
+    "build": "npm run build",
+    "typecheck": "npx tsc --noEmit",
+    "lint": "npm run lint",
+    "test": "npm test",
+    "storybook": "npm run storybook"
+  },
+
+  "devServer": {
+    "port": 3000,
+    "url": "http://localhost:3000"
+  }
+}
