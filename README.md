@@ -200,6 +200,10 @@ Skills load automatically when relevant. You can also name one directly.
 | `responsive-breakpoints` | Before layout work; mobile/tablet bugs |
 | `design-tokens` | Any colour, spacing, font, radius or shadow value |
 | `component-workflow` | Creating or substantially changing a component |
+| `form-handling` | Any form, input, search, filter, login or checkout |
+| `async-ui-states` | Anything that fetches or mutates — loading/empty/error |
+| `i18n-rtl` | Multi-locale projects; RTL mirroring, Intl formatting |
+| `visual-regression` | Proving a change is visually neutral; lift-and-shift ports |
 
 **Quality gates**
 | Skill | Triggers on |
@@ -249,8 +253,8 @@ there is safe and is used deliberately.
 
 | Skill | Effort |
 |---|---|
-| `pixel-perfect-design`, `component-workflow`, `accessibility-audit`, `performance-budget` | high |
-| `responsive-breakpoints`, `design-tokens`, `seo-nextjs`, `typescript-standards`, `unit-testing`, `browser-verification` | medium |
+| `pixel-perfect-design`, `component-workflow`, `accessibility-audit`, `performance-budget`, `form-handling` | high |
+| `responsive-breakpoints`, `design-tokens`, `seo-nextjs`, `typescript-standards`, `unit-testing`, `browser-verification`, `async-ui-states`, `i18n-rtl`, `visual-regression` | medium |
 | `storybook-sync` | low |
 
 `storybook-sync` is low because it is genuinely mechanical: read the existing story
@@ -365,12 +369,17 @@ a defect, not a style preference.
 still a defect — it breaks theming, dark mode and the next rebrand.
 
 **Two rules are enforced by a hook, not just advised.** A `PreToolUse` guard inspects
-every UI file *before* it is written and blocks the write if it reimplements a component
-the project already has, or if it carries layout but has no breakpoint handling. Skills
+every UI file *before* it is written and blocks the write on any of five
+rules: reimplementing a component the project already has (REUSE), layout with no
+breakpoint handling (RESPONSIVE), the deterministic accessibility defects — a click
+handler on a `<div>`, an `<img>` with no `alt`, a form control with no label (A11Y),
+a colour with no `dark:` pair in a dark-mode project (THEME), and adding a dependency
+that duplicates an installed one (DEPS). Skills
 are guidance the model can under-weight; this one is not negotiable.
 
 Both have a documented escape hatch, because both have real exceptions — put
-`// fk:reuse-exempt <reason>` or `// fk:responsive-exempt <reason>` in the file and the
+`// fk:reuse-exempt`, `// fk:responsive-exempt`, `// fk:a11y-exempt`,
+`// fk:theme-exempt` or `// fk:deps-exempt` — each with a reason — in the file, and the
 write proceeds. An enforced rule with no override is a rule people disable.
 
 The guard fails **open**: if Node is missing or it errors, the write goes through. You

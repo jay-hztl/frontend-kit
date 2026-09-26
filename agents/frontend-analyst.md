@@ -159,6 +159,10 @@ storybook/tests apply.>
 | `tsconfig.json` exists | `typescript-standards` skill (always, non-optional) |
 | Storybook installed and a component changed | `storybook-sync` skill |
 | Test runner installed and behaviour changed | `unit-testing` skill |
+| Any form, input, search or filter | `form-handling` skill |
+| Anything that fetches or mutates data | `async-ui-states` skill |
+| Project ships more than one locale | `i18n-rtl` skill |
+| Shared component, token, or a change that must be visually neutral | `visual-regression` skill |
 | Any rendered change | `browser-verification` skill + `frontend-verifier` agent |
 | Interactive component, form, or navigation | `accessibility-audit` skill |
 | Above-the-fold, media-heavy, or large list | `performance-budget` skill |

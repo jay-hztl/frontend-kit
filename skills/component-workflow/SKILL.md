@@ -89,6 +89,7 @@ In order. Ask before the optional ones rather than assuming:
 3. **Unit tests** — runner installed? Ask, then run `unit-testing`.
 4. **SEO** — Next.js and content-bearing? Run `seo-nextjs`.
 5. **Accessibility** — interactive, form, or navigation? Run `accessibility-audit`.
+   If it is a form, run `form-handling`. If it fetches, run `async-ui-states`.
 6. **Browser verification** — always. Run `browser-verification`.
 7. **Performance** — above the fold, media-heavy, or in a big list? Run
    `performance-budget`.
