@@ -19,8 +19,19 @@ PROFILE="$KIT_DIR/project-profile.json"
 
 [ -f "$PROFILE" ] || exit 0
 
-# Read the raw prompt so we can let setup/meta requests through untouched.
-PROMPT="$(cat 2>/dev/null || true)"
+# UserPromptSubmit receives a JSON payload on stdin, not bare text — the prompt
+# is in its `prompt` field. Treating the whole payload as the prompt meant
+# `^`-anchored patterns never matched (the payload starts with `{`) and logged
+# excerpts captured transcript paths instead of what the developer actually said.
+RAW="$(cat 2>/dev/null || true)"
+PROMPT=""
+if command -v node >/dev/null 2>&1; then
+  PROMPT="$(printf '%s' "$RAW" | node -e \
+    'let s="";process.stdin.on("data",d=>s+=d).on("end",()=>{try{const p=JSON.parse(s).prompt;process.stdout.write(typeof p==="string"?p:s)}catch{process.stdout.write(s)}})' \
+    2>/dev/null)"
+fi
+# Fall back to the raw payload if extraction is unavailable or fails.
+[ -n "$PROMPT" ] || PROMPT="$RAW"
 
 # --- correction detection ----------------------------------------------------
 # A developer correcting Claude is the second-richest learning signal after a
