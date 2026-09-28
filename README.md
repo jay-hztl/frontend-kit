@@ -2,6 +2,8 @@
 
 **A Claude Code plugin for frontend developers who ship pixel-perfect work.**
 
+`v1.1.1` · 4 agents · 20 skills · 9 commands · 5 hooks · 5 enforced rules
+
 Frontend Kit makes Claude behave like a senior frontend engineer on *your* project
 rather than a generic code generator. It learns what kind of project you are on, refuses
 to guess at values it should be asking about, and drives every change through the same
@@ -28,6 +30,19 @@ Frontend Kit is built around fixing exactly those three things.
 | Happy path only | Every change is checked at every breakpoint, in every state, with content extremes, in a real browser. |
 | No memory | Onboarding writes `.claude/frontend-kit/` into your repo. Every future session loads it automatically. Commit it and your whole team shares it. |
 
+### Enforced vs advised — the distinction that matters
+
+Most AI coding guidance is advice the model can quietly under-weight. This kit learned
+that the hard way and split itself in two:
+
+| | Mechanism | Behaviour |
+|---|---|---|
+| **Enforced** | Hooks | Onboarding, the setup gate, and 5 write rules. A violating write is **blocked before the file lands**, with a reason. Not negotiable, but each has a documented exemption. |
+| **Advised** | Skills | Judgement-heavy work — requirement analysis, forms, async states, i18n, SEO, performance. Guidance, applied with context. |
+
+Anything that can be checked mechanically got moved into the enforced half. Anything
+needing judgement stayed a skill. That split is why the kit holds up in practice.
+
 ---
 
 ## Installation
@@ -52,6 +67,8 @@ Restart the session after installing so the hooks register.
 
 - Claude Code (CLI, desktop, web or an IDE extension)
 - Node-based frontend project (any framework — React, Next.js, Vue, Svelte, Angular, Astro)
+- Node on `PATH` for the write guard and learning consolidation. Without it both fail
+  open and the kit degrades to skills-only rather than breaking.
 - **Figma-to-Code projects:** the Figma MCP connector (the kit walks you through it)
 - **Lift-and-Shift projects:** a reachable live or staging URL
 
@@ -69,6 +86,14 @@ The first time you start a session in a repo, the kit asks one question:
 > 4. **Mixed** — some of each
 
 Your answer sets up everything downstream, and it is asked **once per project**.
+
+This is enforced, not suggested: until the profile exists, every prompt carries a blocking
+directive to run onboarding first. You can still ask questions, plan and read code — only
+shipping UI code is gated.
+
+> **If you are not being asked:** hooks register at session start. Installing the plugin
+> mid-session does nothing until you start a new session. Run `claude plugin list` to
+> confirm `Status: ✔ enabled`, then restart.
 
 ### If you choose Figma to Code
 
@@ -124,7 +149,7 @@ You: "Add a pricing card to the marketing page"
       └─────────────────────────────┘
                     │
       ┌─────────────────────────────┐
-      │ UserPromptSubmit hook        │  enforces the setup gate
+      │ UserPromptSubmit hook        │  setup gate + correction detection
       └─────────────────────────────┘
                     │
                     ▼
@@ -135,18 +160,28 @@ You: "Add a pricing card to the marketing page"
                     │
         ┌───────────┼───────────┐
         ▼           ▼           ▼
-   pixel-perfect  component  (skills: tokens, a11y,
-     designer     architect   SEO, TS, perf…)
+   pixel-perfect  component  (skills: tokens, a11y, forms,
+     designer     architect   async, SEO, TS, i18n, perf…)
         └───────────┼───────────┘
                     ▼
       ┌─────────────────────────────┐
-      │ PostToolUse hook             │  reminds: TS, breakpoints, tokens,
-      └─────────────────────────────┘  a11y, Storybook, tests, verification
+      │ PreToolUse guard   ⛔ BLOCKS │  reuse · responsive · a11y · theme · deps
+      └─────────────────────────────┘  a violating write never lands
+                    │
+                    ▼
+      ┌─────────────────────────────┐
+      │ PostToolUse hook             │  reminds: TS, Storybook, tests, verify
+      └─────────────────────────────┘
                     │
                     ▼
       ┌─────────────────────────────┐
       │ frontend-verifier            │  renders it, resizes to every breakpoint,
       │                              │  tabs through it, reads the console
+      └─────────────────────────────┘
+                    │
+                    ▼
+      ┌─────────────────────────────┐
+      │ Stop hook                    │  writes what it learned to learnings.md
       └─────────────────────────────┘
 ```
 
@@ -389,6 +424,24 @@ should never be blocked because a checker could not start.
 alone. If the dev server would not start, the kit says so rather than reasoning about
 what the code probably does.
 
+### The five enforced rules
+
+| Rule | Blocks | Exemption |
+|---|---|---|
+| **REUSE** | A styled `<button>`/`<input>`/`<select>`/`<textarea>` inline when the project has that component and it isn't imported | `fk:reuse-exempt` |
+| **RESPONSIVE** | A layout-bearing component with no breakpoint handling, when `breakpoints.md` exists | `fk:responsive-exempt` |
+| **A11Y** | `onClick` on a `<div>`/`<span>`/`<li>`; `<img>` with no `alt`; a form control with no label, `aria-label` or `aria-labelledby` anywhere in the file | `fk:a11y-exempt` |
+| **THEME** | Colour classes with no `dark:` pair — only in projects that demonstrably support dark mode | `fk:theme-exempt` |
+| **DEPS** | Adding a dependency that duplicates an installed one, across 12 groups (date, HTTP, state, forms, CSS-in-JS, icons, animation, validation, …) | `fk:deps-exempt` |
+
+Every exemption takes a reason: `// fk:a11y-exempt keyboard handled by the parent`. The
+reason stays in the file, so the exception is visible in code review instead of silent.
+
+The guard deliberately stays quiet on: a `<div>` that has `role` + `tabIndex` +
+`onKeyDown`, `alt=""` on decorative images, components below the layout-bearing
+threshold, a primitive's own definition, `.stories`/`.test` files, non-UI files, and
+projects that have not been onboarded.
+
 ---
 
 ## Configuration
@@ -423,18 +476,27 @@ frontend-kit/
 ├── hooks/
 │   ├── hooks.json
 │   ├── session-start.sh          # loads memory / forces onboarding
-│   ├── user-prompt-submit.sh     # setup gate
-│   ├── pre-write-guard.sh        # blocks writes that break reuse/responsive
-│   ├── guard.mjs                 # the guard's logic
-│   └── post-edit-reminder.sh     # definition-of-done reminder
+│   ├── user-prompt-submit.sh     # setup gate + correction detection
+│   ├── pre-write-guard.sh        # shim → guard.mjs, fails open
+│   ├── guard.mjs                 # the 5 enforced rules
+│   ├── post-edit-reminder.sh     # definition-of-done reminder
+│   ├── stop.sh                   # learning consolidation
+│   └── consolidate.mjs           # writes learnings.md from the ledger
+├── scripts/
+│   └── diff-snapshot.mjs         # exact style-snapshot diffing
 ├── agents/                       # 4 agents
-├── skills/                       # 16 skills
+├── skills/                       # 20 skills
 ├── commands/                     # 9 slash commands
 └── templates/                    # memory file templates
 ```
 
-Three hooks are plain Bash needing only `grep` and `sed`. The write guard uses Node,
-which every frontend project already has, and fails open if it is absent.
+The Bash hooks need only `grep` and `sed`. The guard, the consolidator and the differ use
+Node — a safe assumption for a frontend audience — and **fail open**: if Node is missing
+or anything throws, the write proceeds. You are never blocked because a checker could not
+start.
+
+Session cost: **~2,600 tokens** added to every session. Hooks are harness-only and cost
+nothing in model context.
 
 ---
 
@@ -464,6 +526,41 @@ skills and agents for workflows specific to your team.
 **Does it modify my CLAUDE.md?**
 Only with your approval, only by appending to a clearly marked section, and it shows you
 the diff first.
+
+**What if the guard blocks something legitimate?**
+Add the exemption comment with a reason and the write proceeds immediately — no config,
+no restart. The reason stays in the file so the exception is reviewable. If a rule is
+wrong for your project more often than it is right, delete its block in
+`hooks/guard.mjs`; it is about thirty lines each.
+
+**Will it block me constantly?**
+It fires on new UI files that break a rule, and it stays quiet on the cases listed under
+*The five enforced rules*. In testing it produced zero false positives across nine
+deliberately-tricky cases. If it blocks something, the reason names the file, the rule
+and the fix.
+
+**Does it need Node?**
+For the guard and the learning loop, yes — and both fail open without it. Bash hooks
+(the setup gate, memory loading, the reminder) work regardless.
+
+**How do I update it?**
+
+```bash
+claude plugin marketplace update frontend-kit-marketplace
+```
+Then reinstall. Updates are keyed to the `version` field, so a release you do not see is
+usually a marketplace cache that has not been refreshed.
+
+**Does it really learn, or does it just say it does?**
+It writes `learnings.md` itself, from a ledger of blocked writes and detected
+corrections — no model cooperation required. Two or more violations of the same rule
+become a written convention; a single one is treated as a slip and recorded as nothing.
+See *How it learns*.
+
+**Can I use only part of it?**
+Yes. Set `projectType` to `greenfield` to drop the setup gate. Delete individual rule
+blocks in `guard.mjs` to drop enforced rules. Skills only load when relevant, so the
+ones irrelevant to your stack cost you nothing beyond their description.
 
 ---
 

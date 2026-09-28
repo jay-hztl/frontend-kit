@@ -4,17 +4,31 @@
     "name": "Frontend Kit"
   },
   "metadata": {
-    "description": "Marketplace hosting the Frontend Kit plugin for Claude Code.",
-    "version": "1.1.0"
+    "description": "Marketplace hosting the Frontend Kit plugin for Claude Code \u2014 project-aware frontend engineering with enforced quality rules.",
+    "version": "1.1.1"
   },
   "plugins": [
     {
       "name": "frontend-kit",
       "source": "./",
-      "description": "Project-aware frontend engineering kit: Figma-to-Code / Lift-and-Shift onboarding, requirement analysis, pixel-perfect responsive implementation, TypeScript + SEO + a11y enforcement, Storybook & unit-test sync, and browser verification.",
-      "version": "1.1.0",
+      "description": "Project-aware frontend engineering kit. Figma-to-Code and Lift-and-Shift onboarding with enforced setup gates; requirement analysis; pixel-perfect responsive implementation; five write rules enforced by hooks (component reuse, breakpoint coverage, accessibility, dark-mode pairing, duplicate dependencies); forms, async states, SEO, TypeScript, i18n/RTL, Storybook and unit-test workflows; browser verification and visual-regression diffing; plus a self-learning loop that records its own mistakes to project memory.",
+      "version": "1.1.1",
       "category": "development",
-      "keywords": ["frontend", "figma", "react", "nextjs", "pixel-perfect", "design-system"]
+      "keywords": [
+        "frontend",
+        "figma",
+        "react",
+        "nextjs",
+        "typescript",
+        "pixel-perfect",
+        "accessibility",
+        "responsive",
+        "design-system",
+        "storybook",
+        "seo",
+        "i18n",
+        "visual-regression"
+      ]
     }
   ]
 }

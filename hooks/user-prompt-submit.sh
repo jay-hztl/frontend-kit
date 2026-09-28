@@ -17,8 +17,6 @@ ROOT="${CLAUDE_PROJECT_DIR:-$PWD}"
 KIT_DIR="$ROOT/.claude/frontend-kit"
 PROFILE="$KIT_DIR/project-profile.json"
 
-[ -f "$PROFILE" ] || exit 0
-
 # UserPromptSubmit receives a JSON payload on stdin, not bare text — the prompt
 # is in its `prompt` field. Treating the whole payload as the prompt meant
 # `^`-anchored patterns never matched (the payload starts with `{`) and logged
@@ -82,6 +80,43 @@ fi
 # Escape hatch: an explicit override phrase from the developer.
 if printf '%s' "$PROMPT" | grep -qi 'frontend-kit[: ]*\(skip\|bypass\|override\)'; then
   echo "<frontend-kit>Setup gate overridden by the developer for this prompt. Proceed, but state once that pixel accuracy cannot be guaranteed without the design source.</frontend-kit>"
+  exit 0
+fi
+
+# --- onboarding gate ---------------------------------------------------------
+# Until v1.1.1 this hook exited here when no profile existed, so a brand-new
+# project had NO enforcement at all — the SessionStart hook merely *suggested*
+# onboarding, and a suggestion is exactly what this kit has repeatedly proven
+# the model can skip. The kit's headline feature was the one thing not enforced.
+if [ ! -f "$PROFILE" ]; then
+  cat <<'EOF'
+<frontend-kit-gate priority="blocking">
+This project has NOT been onboarded — `.claude/frontend-kit/project-profile.json` does
+not exist. The kit does not know whether this is a Figma-to-Code, Lift-and-Shift or
+greenfield project, which breakpoints it uses, or where its design truth lives.
+
+MANDATORY: before writing, generating or modifying any UI/component/styling code for this
+request, run onboarding. Invoke the `project-onboarding` skill now.
+
+Start by surveying the repo (package.json, tsconfig, tailwind config, .storybook, test
+config) so you do not ask what you can already see. Then ask, with AskUserQuestion:
+
+  **What type of project is this?**
+  1. **Figma to Code** — implementing designs from Figma files
+  2. **Lift and Shift** — rebuilding or migrating an existing live website
+  3. **Greenfield** — new UI, no Figma source and no reference site
+  4. **Mixed** — some of each
+
+Then follow the branch: Figma-to-Code requires the Figma MCP connector before any
+implementation; Lift-and-Shift requires a reachable reference URL. Capture the breakpoints
+and write the memory files. Onboarding is a one-time cost — every later session reads the
+profile automatically and never asks again.
+
+Questions, explanations, planning, reading code and onboarding itself are all allowed
+right now. Only shipping UI code is gated. The developer can bypass a single prompt with
+`frontend-kit: skip`.
+</frontend-kit-gate>
+EOF
   exit 0
 fi
 
